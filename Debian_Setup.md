@@ -102,7 +102,7 @@ It should look like the two zroot lines below the mount command
 ```
 mount | grep mnt
 ```
-zroot/ROOT/debian on /mnt type zfs (rw,relatime,xattr,posixacl)
+zroot/ROOT/debian on /mnt type zfs (rw,relatime,xattr,posixacl)   
 zroot/home on /mnt/home type zfs (rw,relatime,xattr,posixacl)
 
 ### Update Device Symlinks
