@@ -1,19 +1,20 @@
 
 # DEBIAN ON ZFSBOOTMENU
-
+  
 ## BOOT FROM DEBIAN LIVE INSTALLER
 Username = user  Password = live
-
+    
 ### In the Terminal Become root
 ```
 sudo -i
 ```
-
+  
 ### Source /etc/os-release
 ```
 source /etc/os-release
 export ID
 ```
+  
 ### Configure and Update APT
 ```
 cat <<EOF > /etc/apt/sources.list
@@ -22,11 +23,13 @@ deb-src http://deb.debian.org/debian/ trixie main non-free-firmware contrib
 EOF
 apt update
 ```
+  
 ### Install ZFS, Debootstrap and Helpers into the Live Debian Environment 
 ```
 apt install debootstrap gdisk dkms linux-headers-$(uname -r)
 apt install zfsutils-linux
 ```
+  
 ### Generate /etc/hostid
 ```
 zgenhostid -f 0x00bab10c
@@ -45,7 +48,7 @@ export POOL_DEVICE="${POOL_DISK}p${POOL_PART}"
 ```
 
 ## DISK PREPARATION
-
+  
 ### Wipe partitions
 ```
 zpool labelclear -f "$POOL_DISK"
@@ -56,11 +59,12 @@ wipefs -a "$BOOT_DISK"
 sgdisk --zap-all "$POOL_DISK"
 sgdisk --zap-all "$BOOT_DISK"
 ```
-
+  
 ### Create EFI boot partition
 ```
 sgdisk -n "${BOOT_PART}:1m:+512m" -t "${BOOT_PART}:ef00" "$BOOT_DISK"
 ```
+  
 ### Create ZPOOL partition
 ```
 sgdisk -n "${POOL_PART}:0:-10m" -t "${POOL_PART}:bf00" "$POOL_DISK"
@@ -79,7 +83,7 @@ zpool create -f -o ashift=12 \
  -o compatibility=openzfs-2.2-linux \
  -m none zroot "$POOL_DEVICE"
 ```
-
+  
 ### Create Initial File Systems
 ``` 
 zfs create -o mountpoint=none zroot/ROOT
@@ -88,7 +92,7 @@ zfs create -o mountpoint=/home zroot/home
 
 zpool set bootfs=zroot/ROOT/${ID} zroot
 ```
-
+  
 ### Export, then re-import with temp mountpoint - Unencrypted
 ```
 zpool export zroot
@@ -109,10 +113,12 @@ zroot/home on /mnt/home type zfs (rw,relatime,xattr,posixacl)
 ```
 udevadm trigger
 ```
+  
 ### Install Debootstrap Debian onto your disk
 ```
 debootstrap trixie /mnt
 ```
+  
 ### Copy Files into the new Debootstrap Debian Install
 ```
 cp /etc/hostid /mnt/etc
@@ -137,11 +143,13 @@ chroot /mnt /bin/bash
 echo 'YOURHOSTNAME' > /etc/hostname
 echo -e '127.0.1.1\tYOURHOSTNAME' >> /etc/hosts
 ```
+  
 ### Set a root password
 ```
 echo 'YOURHOSTNAME' > /etc/hostname
 echo -e '127.0.1.1\tYOURHOSTNAME' >> /etc/hosts
 ```
+  
 ### Configure APT Sources
 ```
 cat <<EOF > /etc/apt/sources.list
@@ -156,16 +164,18 @@ deb http://deb.debian.org/debian trixie-updates main non-free-firmware contrib
 deb-src http://deb.debian.org/debian trixie-updates main non-free-firmware contrib
 EOF
 ```
+
 ### Update repo cache
 ```
 apt update
 ```
+
 ### Install base packages
 ```
 apt install linux-headers-amd64 linux-image-amd64 zfsutils-linux zfs-initramfs zfs-dkms -y
 ```
 ```
-apt install firmware-linux wireless-tools firmware-realtek systemd-boot kexec-tools systemd-timesyncd network-manager bind9-dnsutils pciutils usbutils -y
+apt install firmware-linux wireless-tools firmware-realtek systemd-boot kexec-tools systemd-timesyncd tasksel network-manager bind9-dnsutils pciutils usbutils -y
 ```
 ```
 apt install dosfstools dpkg-dev curl nano -y
@@ -175,11 +185,16 @@ apt install dosfstools dpkg-dev curl nano -y
 ```
 apt install locales keyboard-configuration console-setup
 ```
+
 ### Configure packages to customise locales and console properties
 ```
 dpkg-reconfigure locales tzdata keyboard-configuration console-setup
 ```
 
+### Install a regular set of Debian software
+```
+tasksel --new-install
+```
 
 ## ZFS CONFIGURATION
 
@@ -198,7 +213,7 @@ systemctl enable zfs-import.target
 
 ### Configure initramfs-tools
 n/a
-
+  
 ### Rebuild the initramfs
 ```
 update-initramfs -c -k all
@@ -239,6 +254,7 @@ cp /boot/efi/EFI/ZBM/VMLINUZ.EFI /boot/efi/EFI/ZBM/VMLINUZ-BACKUP.EFI
 ```
 mount -t efivarfs efivarfs /sys/firmware/efi/efivars
 ```
+
 Direct using EFI
 ```
 apt install efibootmgr
