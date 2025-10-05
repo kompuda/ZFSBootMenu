@@ -4,18 +4,18 @@
 ## BOOT FROM DEBIAN LIVE INSTALLER
 Username = user  Password = live
     
-### In the Terminal Become root
+### IN THE TERMINAL BECOME ROOT
 ```
 sudo -i
 ```
   
-### Source /etc/os-release
+### SOURCE ```/etc/os-release```
 ```
 source /etc/os-release
 export ID
 ```
   
-### Configure and Update APT
+### CONFIGURE AND UPDATE APT
 ```
 cat <<EOF > /etc/apt/sources.list
 deb http://deb.debian.org/debian/ trixie main non-free-firmware contrib
@@ -24,19 +24,19 @@ EOF
 apt update
 ```
   
-### Install ZFS, Debootstrap and Helpers into the Live Debian Environment 
+### INSTALL ZFS, DEBOOTSTRAP AND HELPERS INTO THE LIVE DEBIAN ENVIRONMENT 
 ```
 apt install debootstrap gdisk dkms linux-headers-$(uname -r)
 apt install zfsutils-linux
 ```
   
-### Generate /etc/hostid
+### GENERATE ```/etc/hostid```
 ```
 zgenhostid -f 0x00bab10c
 ```
 
 ## DEFINE DISK VARIABLES
-### Single NVME Disk
+### SINGLE NVME DISK
 ```
 export BOOT_DISK="/dev/nvme0n1"
 export BOOT_PART="1"
@@ -49,7 +49,7 @@ export POOL_DEVICE="${POOL_DISK}p${POOL_PART}"
 
 ## DISK PREPARATION
   
-### Wipe partitions
+### WIPE PARTITIONS
 ```
 zpool labelclear -f "$POOL_DISK"
 
@@ -60,19 +60,19 @@ sgdisk --zap-all "$POOL_DISK"
 sgdisk --zap-all "$BOOT_DISK"
 ```
   
-### Create EFI boot partition
+### CREATE EFI BOOT PARTITION
 ```
 sgdisk -n "${BOOT_PART}:1m:+512m" -t "${BOOT_PART}:ef00" "$BOOT_DISK"
 ```
   
-### Create ZPOOL partition
+### CREATE ZPOOL PARTITION
 ```
 sgdisk -n "${POOL_PART}:0:-10m" -t "${POOL_PART}:bf00" "$POOL_DISK"
 ```
 
 ## ZFS POOL CREATION
 
-### Create the Pool - Unencrypted
+### CREATE THE POOL - UNENCRYPTED
 ```
 zpool create -f -o ashift=12 \
  -O compression=lz4 \
@@ -84,7 +84,7 @@ zpool create -f -o ashift=12 \
  -m none zroot "$POOL_DEVICE"
 ```
   
-### Create Initial File Systems
+### CREATE INITIAL FILE SYSTEMS
 ``` 
 zfs create -o mountpoint=none zroot/ROOT
 zfs create -o mountpoint=/ -o canmount=noauto zroot/ROOT/${ID}
@@ -93,7 +93,7 @@ zfs create -o mountpoint=/home zroot/home
 zpool set bootfs=zroot/ROOT/${ID} zroot
 ```
   
-### Export, then re-import with temp mountpoint - Unencrypted
+### EXPORT, THEN RE-IMPORT WITH TEMP MOUNTPOINT - UNENCRYPTED
 ```
 zpool export zroot
 zpool import -N -R /mnt zroot
@@ -101,7 +101,7 @@ zfs mount zroot/ROOT/${ID}
 zfs mount zroot/home
 ```
 
-### Verify everything mounts correctly
+### VERIFY EVERYTHING MOUNTS CORRECTLY
 It should look like the two zroot lines below the mount command
 ```
 mount | grep mnt
@@ -110,23 +110,23 @@ zroot/ROOT/debian on /mnt type zfs (rw,relatime,xattr,posixacl)
 
 zroot/home on /mnt/home type zfs (rw,relatime,xattr,posixacl)
 
-### Update Device Symlinks
+### UPDATE DEVICE SYMLINKS
 ```
 udevadm trigger
 ```
   
-### Install Debootstrap Debian onto your disk
+### INSTALL DEBOOTSTRAP DEBIAN ONTO YOUR DISK
 ```
 debootstrap trixie /mnt
 ```
   
-### Copy Files into the new Debootstrap Debian Install
+### COPY FILES INTO THE NEW DEBOOTSTRAP DEBIAN INSTALL
 ```
 cp /etc/hostid /mnt/etc
 cp /etc/resolv.conf /mnt/etc
 ```
 
-### Chroot into the new Debootstrap Debian OS
+### CHROOT INTO THE NEW DEBOOTSTRAP DEBIAN OS
 ```
 mount -t proc proc /mnt/proc
 mount -t sysfs sys /mnt/sys
@@ -139,37 +139,41 @@ chroot /mnt /bin/bash
 # BASIC SYSTEM CONFIGURATION
 
 
-### SET A HOSTNAME
+### CONFIGURE THE HOSTNAME
+Replace `HOSTNAME' with the desired hostname
 ```
 echo 'YOURHOSTNAME' > /mnt/etc/hostname
 ```
 ```
 nano /mnt/etc/hosts
-```
-Add a line:
-```
+
+#Add a line:
 127.0.1.1   `YOURHOSTNAME' 
+#or if the system has a real name in DNS:
+127.0.1.1       FQDN HOSTNAME
 ```
 
 ### CONFIGURE THE NETWORK INTERFACE
 ```
+# Find the interface name
 ip addr show
 ```
 Adjust NAME below to match your interface name
 ```
 nano /mnt/etc/network/interfaces.d/NAME
+
 #Add lines to config:
 auto NAME
 iface NAME inet dhcp
 ```
   
-### Set a root password
+### SET A ROOT PASSWORD
 ```
 echo 'YOURHOSTNAME' > /etc/hostname
 echo -e '127.0.1.1\tYOURHOSTNAME' >> /etc/hosts
 ```
   
-### Configure APT Sources
+### CONFIGURE APT SOURCES
 ```
 cat <<EOF > /etc/apt/sources.list
 deb http://deb.debian.org/debian/ trixie main non-free-firmware contrib
@@ -184,17 +188,17 @@ deb-src http://deb.debian.org/debian trixie-updates main non-free-firmware contr
 EOF
 ```
 
-### Update repo cache
+### UPDATE REPO CACHE
 ```
 apt update
 ```
 
-### Upgrade the minimal debootstrap Debian
+### UPGRADE THE MINIMAL DEBOOTSTRAP DEBIAN
 ```
 apt dist-upgrade -y
 ```
 
-### Install base packages
+### INSTALL BASE PACKAGES
 ```
 apt install linux-headers-amd64 linux-image-amd64 zfsutils-linux zfs-initramfs zfs-dkms -y
 ```
@@ -205,12 +209,12 @@ apt install  git aptitude firmware-linux wireless-tools firmware-realtek systemd
 apt install dosfstools dpkg-dev curl nano -y
 ```
 
-### Install localisation packages
+### INSTALL LOCALISATION PACKAGES
 ```
 apt install locales keyboard-configuration console-setup
 ```
 
-### Configure packages to customise locales and console properties
+### CONFIGURE PACKAGES TO CUSTOMISE LOCALES AND CONSOLE PROPERTIES
 ```
 dpkg-reconfigure locales tzdata keyboard-configuration console-setup
 ```
@@ -218,12 +222,11 @@ dpkg-reconfigure locales tzdata keyboard-configuration console-setup
 
 ## ZFS CONFIGURATION
 
-### 
 ```
 echo "REMAKE_INITRD=yes" > /etc/dkms/zfs.conf
 ```
 
-### Enable systemd ZFS services
+### ENABLE SYSTEMD ZFS SERVICES
 ```
 systemctl enable zfs.target
 systemctl enable zfs-import-cache
@@ -231,10 +234,10 @@ systemctl enable zfs-mount
 systemctl enable zfs-import.target
 ```
 
-### Configure initramfs-tools
+### CONFIGURE ```initramfs-tools```
 n/a
   
-### Rebuild the initramfs
+### REBUILD THE INITRAMFS
 ```
 update-initramfs -c -k all
 ```
@@ -242,17 +245,17 @@ update-initramfs -c -k all
 
 # INSTALL AND CONFIGURE ZFSBOOTMENU
 
-### Set ZFSBootMenu properties on datasets
+### SET ZFSBOOTMENU PROPERTIES ON DATASETS
 ```
 zfs set org.zfsbootmenu:commandline="quiet" zroot/ROOT
 ```
 
-### Create a vfat filesystem
+### CREATE A VFAT FILESYSTEM
 ```
 mkfs.vfat -F32 "$BOOT_DEVICE"
 ```
 
-### Create an fstab entry and mount
+### CREATE AN FSTAB ENTRY AND MOUNT
 ```
 cat << EOF >> /etc/fstab
 $( blkid | grep "$BOOT_DEVICE" | cut -d ' ' -f 2 ) /boot/efi vfat defaults 0 0
@@ -262,7 +265,7 @@ mkdir -p /boot/efi
 mount /boot/efi
 ```
 
-### Install ZFSBootMenu
+### INSTALL ZFSBOOTMENU
 Fetch a prebuilt EFI executable and save it into the EFI system partition.
 ```
 mkdir -p /boot/efi/EFI/ZBM
@@ -270,12 +273,12 @@ curl -o /boot/efi/EFI/ZBM/VMLINUZ.EFI -L https://get.zfsbootmenu.org/efi
 cp /boot/efi/EFI/ZBM/VMLINUZ.EFI /boot/efi/EFI/ZBM/VMLINUZ-BACKUP.EFI
 ```
 
-### Configure EFI boot entries
+### CONFIGURE EFI BOOT ENTRIES
 ```
 mount -t efivarfs efivarfs /sys/firmware/efi/efivars
 ```
 
-Direct using EFI
+DIRECT USING EFI
 ```
 apt install efibootmgr
 ```
@@ -292,7 +295,7 @@ efibootmgr -c -d "$BOOT_DISK" -p "$BOOT_PART" \
 
 ## PREPARE FOR FIRST BOOT
 
-### Exit the chroot, unmount everything
+### EXIT THE CHROOT, UNMOUNT EVERYTHING
 ```
 exit
 ```
@@ -300,7 +303,7 @@ exit
 umount -n -R /mnt
 ```
 
-### Export the zpool and reboot
+### EXPORT THE ZPOOL AND REBOOT
 ```
 zpool export zroot
 reboot
@@ -309,7 +312,8 @@ reboot
 
 ## AFTER FIRST BOOT
 
-### Create a user account
+### CREATE A USER ACCOUNT
+
 username=YOUR_USERNAME
 ```
 sudo zfs create rpool/home/$username
@@ -320,17 +324,17 @@ chown -R $username:$username /home/$username
 usermod -a -G audio,cdrom,dip,floppy,netdev,plugdev,sudo,video $username
 ```
 
-### Install a regular set of Debian software and Desktop Environment
+### INSTALL A REGULAR SET OF DEBIAN SOFTWARE & DESKTOP ENVIRONMENT
 ```
 tasksel --new-install
 ```
 
-### Install software
+### INSTALL SOFTWARE
 ```
 sudo apt install synaptic wget fastfetch gcc make python3 python3-pip unrar unzip cargo p7zip ntfs-3g htop ffmpeg ttf-mscorefonts-installer fonts-firacode fonts-jetbrains-mono fonts-croscore fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto fonts-noto-cjk -y
 ```
 
-### Disable log compression
+### DISABLE LOG COMPRESSION
 ```
 nano /etc/logrotate.d
 ```
@@ -342,7 +346,7 @@ for file in /etc/logrotate.d/* ; do
 done
 ```
 
-### Reboot your machine.
+### REBOOT YOUR MACHINE
 ```
 reboot
 ```
