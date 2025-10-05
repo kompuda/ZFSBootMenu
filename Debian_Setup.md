@@ -203,7 +203,7 @@ apt dist-upgrade -y
 apt install linux-headers-amd64 linux-image-amd64 zfsutils-linux zfs-initramfs zfs-dkms -y
 ```
 ```
-apt install  git aptitude firmware-linux wireless-tools firmware-realtek systemd-boot kexec-tools systemd-timesyncd tasksel network-manager bind9-dnsutils pciutils usbutils -y
+apt install git aptitude firmware-linux wireless-tools firmware-realtek systemd-boot kexec-tools systemd-timesyncd tasksel network-manager bind9-dnsutils pciutils usbutils -y
 ```
 ```
 apt install dosfstools dpkg-dev curl nano -y
