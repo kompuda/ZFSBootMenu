@@ -106,7 +106,8 @@ It should look like the two zroot lines below the mount command
 ```
 mount | grep mnt
 ```
-zroot/ROOT/debian on /mnt type zfs (rw,relatime,xattr,posixacl)   
+zroot/ROOT/debian on /mnt type zfs (rw,relatime,xattr,posixacl)
+
 zroot/home on /mnt/home type zfs (rw,relatime,xattr,posixacl)
 
 ### Update Device Symlinks
@@ -135,13 +136,31 @@ chroot /mnt /bin/bash
 ```
 
 
-## BASIC DEBIAN CONFIGURATION
+# BASIC SYSTEM CONFIGURATION
 
 
-### Set a Hostmane
+### SET A HOSTNAME
 ```
-echo 'YOURHOSTNAME' > /etc/hostname
-echo -e '127.0.1.1\tYOURHOSTNAME' >> /etc/hosts
+echo 'YOURHOSTNAME' > /mnt/etc/hostname
+```
+```
+nano /mnt/etc/hosts
+```
+Add a line:
+```
+127.0.1.1   `YOURHOSTNAME' 
+```
+
+### CONFIGURE THE NETWORK INTERFACE
+```
+ip addr show
+```
+Adjust NAME below to match your interface name
+```
+nano /mnt/etc/network/interfaces.d/NAME
+#Add lines to config:
+auto NAME
+iface NAME inet dhcp
 ```
   
 ### Set a root password
@@ -170,18 +189,23 @@ EOF
 apt update
 ```
 
+### Upgrade the minimal debootstrap Debian
+```
+apt dist-upgrade -y
+```
+
 ### Install base packages
 ```
 apt install linux-headers-amd64 linux-image-amd64 zfsutils-linux zfs-initramfs zfs-dkms -y
 ```
 ```
-apt install firmware-linux wireless-tools firmware-realtek systemd-boot kexec-tools systemd-timesyncd tasksel network-manager bind9-dnsutils pciutils usbutils -y
+apt install  git aptitude firmware-linux wireless-tools firmware-realtek systemd-boot kexec-tools systemd-timesyncd tasksel network-manager bind9-dnsutils pciutils usbutils -y
 ```
 ```
 apt install dosfstools dpkg-dev curl nano -y
 ```
 
-### Install additonal base packages
+### Install localisation packages
 ```
 apt install locales keyboard-configuration console-setup
 ```
@@ -191,10 +215,6 @@ apt install locales keyboard-configuration console-setup
 dpkg-reconfigure locales tzdata keyboard-configuration console-setup
 ```
 
-### Install a regular set of Debian software
-```
-tasksel --new-install
-```
 
 ## ZFS CONFIGURATION
 
@@ -220,7 +240,7 @@ update-initramfs -c -k all
 ```
 
 
-## INSTALL AND CONFIGURE ZFSBOOTMENU
+# INSTALL AND CONFIGURE ZFSBOOTMENU
 
 ### Set ZFSBootMenu properties on datasets
 ```
@@ -292,7 +312,7 @@ reboot
 ### Create a user account
 username=YOUR_USERNAME
 ```
-zfs create rpool/home/$username
+sudo zfs create rpool/home/$username
 adduser $username
 
 cp -a /etc/skel/. /home/$username
@@ -300,20 +320,14 @@ chown -R $username:$username /home/$username
 usermod -a -G audio,cdrom,dip,floppy,netdev,plugdev,sudo,video $username
 ```
 
-### Upgrade the minimal debootstrap Debian
-```
-apt update
-apt dist-upgrade -y
-```
-
-### Install a regular set of Debian software
+### Install a regular set of Debian software and Desktop Environment
 ```
 tasksel --new-install
 ```
 
 ### Install software
 ```
-sudo apt install git aptitude synaptic wget fastfetch gcc make python3 python3-pip unrar unzip cargo p7zip ntfs-3g htop ffmpeg ttf-mscorefonts-installer fonts-firacode fonts-jetbrains-mono fonts-croscore fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto fonts-noto-cjk -y
+sudo apt install synaptic wget fastfetch gcc make python3 python3-pip unrar unzip cargo p7zip ntfs-3g htop ffmpeg ttf-mscorefonts-installer fonts-firacode fonts-jetbrains-mono fonts-croscore fonts-crosextra-carlito fonts-crosextra-caladea fonts-noto fonts-noto-cjk -y
 ```
 
 ### Disable log compression
@@ -329,3 +343,26 @@ done
 ```
 
 ### Reboot your machine.
+```
+reboot
+```
+
+# FINAL CLEANUP
+
+## DISABLE root SSH LOGINS
+```
+sudo vi /etc/ssh/sshd_config
+# Remove: PermitRootLogin yes
+
+sudo systemctl restart ssh
+```
+
+## RE-ENABLE GRAPHICAL BOOT PROCESS
+```
+sudo vi /etc/default/grub
+# Add quiet to GRUB_CMDLINE_LINUX_DEFAULT
+# Comment out GRUB_TERMINAL=console
+# Save and quit.
+
+sudo update-grub
+```
