@@ -93,6 +93,8 @@ zpool set bootfs=zroot/ROOT/${ID} zroot
 ### EXPORT, THEN RE-IMPORT WITH TEMP MOUNTPOINT - UNENCRYPTED
 ```
 zpool export zroot
+```
+```
 zpool import -N -R /mnt zroot
 zfs mount zroot/ROOT/${ID}
 zfs mount zroot/home
