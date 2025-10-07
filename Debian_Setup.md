@@ -367,3 +367,34 @@ sudo vi /etc/default/grub
 
 sudo update-grub
 ```
+
+## VERIFY USB EFI PARTITION
+```
+lsblk -f
+```
+## CONFIRM EFI STRUCTURE ON THE USB
+```
+sudo tree /mnt/boot/efi
+#or if not mounted yet
+sudo mount /dev/sdb1 /mnt
+sudo tree /mnt
+```
+## CREATE A UEFI BOOT ENTRY
+```
+sudo efibootmgr --create \
+  --disk /dev/sdb \
+  --part 1 \
+  --label "ZFSBootMenu USB" \
+  --loader '\EFI\BOOT\BOOTX64.EFI'
+```
+## VERIFY THE NEW BOOT ENTRY
+```
+sudo efibootmgr -v
+```
+## ADJUST BOOT ORDER
+```
+sudo efibootmgr -o 0004,0001,0000
+# replacing 0004 with the actual Boot#### number shown for "ZFSBootMenu USB"
+```
+
+
