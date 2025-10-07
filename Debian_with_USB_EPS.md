@@ -240,57 +240,91 @@ n/a
 update-initramfs -c -k all
 ```
 
+### DOUBLE CHECK 
+```
+zpool set bootfs=zroot/ROOT/debian zroot
+update-initramfs -c -k all
+```
+
+### ZFSBootMenu DRY RUN BEFORE REBOOTING
+```
+zpool get bootfs zroot
+```
+Expected output
+NAME   PROPERTY  VALUE                SOURCE
+zroot  bootfs    zroot/ROOT/debian    local
+
+If it doesn't show zroot/ROOT/debian, fix it with:
+```
+zpool set bootfs=zroot/ROOT/debian zroot
+```
+That’s what ZFSBootMenu uses to pick the default boot dataset.
+
+### CONFIRM YOUR DATASETS LOOK RIGHT
+```
+zfs list -o name,canmount,mountpoint
+```
+
+Expected:
+NAME               CANMOUNT  MOUNTPOINT
+zroot              off       none
+zroot/ROOT         off       none
+zroot/ROOT/debian  noauto    /
+zroot/home         on        /home
+
+### CHECK KERNEL AND INITRAMFS PRESENCE
+```
+/boot/vmlinuz-<version>
+/boot/initrd.img-<version>
+```
+So list them:
+```
+ls -lh /mnt/boot
+```
+You should see files like:
+vmlinuz-6.12.43-amd64
+initrd.img-6.12.43-amd64
+
+If you’re in a chroot, remove /mnt:
+```
+ls -lh /boot
+```
+
+### OPTIONAL DRY-RUN USING ZFSBOOTMENU TOOLS
+If you’ve installed the package inside your chroot:
+```
+apt install zfsbootmenu
+```
+Then you can simulate what ZFSBootMenu will detect:
+```
+zfsbootmenu --print
+```
+It’ll show something like:
+Discovered boot environments:
+  zroot/ROOT/debian
+
+If it lists your zroot/ROOT/debian dataset and finds the kernel and initramfs under /boot, you’re golden.
+
+
+### SANITY REBOOT PLAN
+
+When you reboot:
+
+Plug in your ZFSBootMenu USB.
+
+Select it in your UEFI boot menu.
+
+It should open ZFSBootMenu, show zroot/ROOT/debian, and boot into it automatically.
+
+If you see your dataset but it won’t boot, it’s almost always because of:
+
+Missing initramfs ZFS modules (fixed by update-initramfs), or
+
+Wrong bootfs (fixed above).
+
 
 # ################################################################################
 
-# INSTALL AND CONFIGURE ZFSBOOTMENU
-
-### SET ZFSBOOTMENU PROPERTIES ON DATASETS
-```
-zfs set org.zfsbootmenu:commandline="quiet" zroot/ROOT
-```
-
-### CREATE A VFAT FILESYSTEM
-```
-mkfs.vfat -F32 "$BOOT_DEVICE"
-```
-
-### CREATE AN FSTAB ENTRY AND MOUNT
-```
-cat << EOF >> /etc/fstab
-$( blkid | grep "$BOOT_DEVICE" | cut -d ' ' -f 2 ) /boot/efi vfat defaults 0 0
-EOF
-
-mkdir -p /boot/efi
-mount /boot/efi
-```
-
-### INSTALL ZFSBOOTMENU
-Fetch a prebuilt EFI executable and save it into the EFI system partition.
-```
-mkdir -p /boot/efi/EFI/ZBM
-curl -o /boot/efi/EFI/ZBM/VMLINUZ.EFI -L https://get.zfsbootmenu.org/efi
-cp /boot/efi/EFI/ZBM/VMLINUZ.EFI /boot/efi/EFI/ZBM/VMLINUZ-BACKUP.EFI
-```
-
-### CONFIGURE EFI BOOT ENTRIES
-```
-mount -t efivarfs efivarfs /sys/firmware/efi/efivars
-```
-
-DIRECT USING EFI
-```
-apt install efibootmgr
-```
-```
-efibootmgr -c -d "$BOOT_DISK" -p "$BOOT_PART" \
-  -L "ZFSBootMenu (Backup)" \
-  -l '\EFI\ZBM\VMLINUZ-BACKUP.EFI'
-
-efibootmgr -c -d "$BOOT_DISK" -p "$BOOT_PART" \
-  -L "ZFSBootMenu" \
-  -l '\EFI\ZBM\VMLINUZ.EFI'
-```
 
 
 ## PREPARE FOR FIRST BOOT
@@ -399,5 +433,66 @@ sudo efibootmgr -v
 sudo efibootmgr -o 0004,0001,0000
 # replacing 0004 with the actual Boot#### number shown for "ZFSBootMenu USB"
 ```
+
+
+
+
+
+
+
+
+# #######################################################################################
+
+## FOR ZFSBOOTMENU ON DISK
+
+# INSTALL AND CONFIGURE ZFSBOOTMENU
+
+### SET ZFSBOOTMENU PROPERTIES ON DATASETS
+```
+zfs set org.zfsbootmenu:commandline="quiet" zroot/ROOT
+```
+
+### CREATE A VFAT FILESYSTEM
+```
+mkfs.vfat -F32 "$BOOT_DEVICE"
+```
+
+### CREATE AN FSTAB ENTRY AND MOUNT
+```
+cat << EOF >> /etc/fstab
+$( blkid | grep "$BOOT_DEVICE" | cut -d ' ' -f 2 ) /boot/efi vfat defaults 0 0
+EOF
+
+mkdir -p /boot/efi
+mount /boot/efi
+```
+
+### INSTALL ZFSBOOTMENU
+Fetch a prebuilt EFI executable and save it into the EFI system partition.
+```
+mkdir -p /boot/efi/EFI/ZBM
+curl -o /boot/efi/EFI/ZBM/VMLINUZ.EFI -L https://get.zfsbootmenu.org/efi
+cp /boot/efi/EFI/ZBM/VMLINUZ.EFI /boot/efi/EFI/ZBM/VMLINUZ-BACKUP.EFI
+```
+
+### CONFIGURE EFI BOOT ENTRIES
+```
+mount -t efivarfs efivarfs /sys/firmware/efi/efivars
+```
+
+DIRECT USING EFI
+```
+apt install efibootmgr
+```
+```
+efibootmgr -c -d "$BOOT_DISK" -p "$BOOT_PART" \
+  -L "ZFSBootMenu (Backup)" \
+  -l '\EFI\ZBM\VMLINUZ-BACKUP.EFI'
+
+efibootmgr -c -d "$BOOT_DISK" -p "$BOOT_PART" \
+  -L "ZFSBootMenu" \
+  -l '\EFI\ZBM\VMLINUZ.EFI'
+```
+
 
 
