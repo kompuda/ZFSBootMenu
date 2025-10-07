@@ -36,11 +36,11 @@ zgenhostid -f 0x00bab10c
 ```
 
 ## DEFINE DISK VARIABLES (NVME OR SEPARATE USB FLASH)
-### SINGLE NVME DISK
+### SEPARATE USB BOOT DEVICE
 ```
-export BOOT_DISK="/dev/nvme0n1"
+export BOOT_DISK="/dev/sdb"
 export BOOT_PART="1"
-export BOOT_DEVICE="${BOOT_DISK}p${BOOT_PART}"
+export BOOT_DEVICE="${BOOT_DISK}${BOOT_PART}"
 ```
 Then define variables that refer to the disk and partition number that will hold the ZFS pool
 ```
@@ -49,38 +49,19 @@ export POOL_PART="2"
 export POOL_DEVICE="${POOL_DISK}p${POOL_PART}"
 ```
 
-### SEPARATE BOOT DEVICE
-```
-export BOOT_DISK="/dev/sdb"
-export BOOT_PART="1"
-export BOOT_DEVICE="${BOOT_DISK}${BOOT_PART}"
-```
-Then define variables that refer to the disk and partition number that will hold the ZFS pool
-```
-export POOL_DISK="/dev/sda"
-export POOL_PART="1"
-export POOL_DEVICE="${POOL_DISK}${POOL_PART}"
-```
-
 
 ## DISK PREPARATION
   
-### WIPE PARTITIONS
+### WIPE NVME PARTITIONS
 ```
 zpool labelclear -f "$POOL_DISK"
 
 wipefs -a "$POOL_DISK"
-wipefs -a "$BOOT_DISK"
 
 sgdisk --zap-all "$POOL_DISK"
-sgdisk --zap-all "$BOOT_DISK"
 ```
   
-### CREATE EFI BOOT PARTITION
-```
-sgdisk -n "${BOOT_PART}:1m:+512m" -t "${BOOT_PART}:ef00" "$BOOT_DISK"
-```
-  
+ 
 ### CREATE ZPOOL PARTITION
 ```
 sgdisk -n "${POOL_PART}:0:-10m" -t "${POOL_PART}:bf00" "$POOL_DISK"
